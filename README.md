@@ -1,4 +1,3 @@
-# 3D-Circular-Workpiece-Measurement
 # 3D Circular Workpiece Measurement (Stereo Vision)
 
 Reconstruct a circular workpiece in 3D and estimate its real-world diameter from a calibrated stereo pair.
