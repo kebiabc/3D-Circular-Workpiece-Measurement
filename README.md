@@ -1,1 +1,223 @@
 # 3D-Circular-Workpiece-Measurement
+# 3D Circular Workpiece Measurement (Stereo Vision)
+
+Reconstruct a circular workpiece in 3D and estimate its real-world diameter from a calibrated stereo pair.
+This repo demonstrates a full pipeline: **circle detection → stereo triangulation → metric diameter estimation → 3D visualization**.
+
+---
+
+## Features
+
+* Robust circle edge extraction (Gaussian blur + Canny + contour search)
+* Sub-pixel refinement of edge points
+* Best-fit enclosing circle per view
+* Stereo **triangulation** of the circle center using projection matrices
+* Metric **diameter** estimation from pixel radius + depth (pinhole camera model)
+* Matplotlib 3D visualization of the reconstructed circle and cameras
+
+---
+
+## Requirements
+
+* Python 3.8+
+* OpenCV (`opencv-python`)
+* NumPy
+* Matplotlib
+
+Install with:
+
+```bash
+pip install -r requirements.txt
+```
+
+`requirements.txt` (example)
+
+```
+opencv-python>=4.7
+numpy>=1.23
+matplotlib>=3.6
+```
+
+---
+
+## File Structure
+
+```
+.
+├── tools/
+│   ├── left.jpg          # left view image
+│   └── right.jpg         # right view image
+├── your_script.py        # the code you pasted
+└── README.md
+```
+
+**Outputs**
+
+* `tools/left_result.jpg`, `tools/right_result.jpg` – detection overlays
+* `3d_reconstruction.png` – 3D plot (saved when visualization runs)
+* Console logs: circle centers (px), radii (px), 3D center (mm), diameter (mm), depth (mm)
+
+---
+
+## Usage
+
+1. Put your stereo images into `tools/left.jpg` and `tools/right.jpg`.
+2. Edit camera parameters in `main()`:
+
+   * `K1`, `K2` (intrinsics)
+   * `R`, `T` (right camera pose w\.r.t. left)
+   * (Optional) Distortion coefficients if you plan to undistort beforehand
+3. Run:
+
+```bash
+python your_script.py
+```
+
+---
+
+## How It Works (Pipeline)
+
+1. **2D Circle Fitting – `fit_circle(image_path)`**
+
+   * Grayscale → Gaussian blur → Canny edges
+   * `findContours` to collect edges
+   * For each contour, compute `minEnclosingCircle`; keep the one with the **largest radius**
+   * Sub-pixel refine contour points (`cornerSubPix`), recompute enclosing circle
+   * Return **center (u, v)** and **radius r\_px** in pixels
+
+2. **Stereo Triangulation – `triangulate_points(point1, point2, P1, P2)`**
+
+   * Build camera projection matrices
+
+     $$
+     P_1 = K_1 [I\ |\ 0],\quad P_2 = K_2 [R\ |\ T]
+     $$
+   * Use `cv2.triangulatePoints` on the matched **circle centers** from the two views
+   * Convert homogeneous 4D back to 3D (mm) → **circle center in 3D**
+
+3. **Metric Diameter – `calculate_diameter(...)`**
+
+   * With depth $Z$ of the 3D center in each camera, convert pixel radius to metric:
+
+     $$
+     r_{\text{real}} = \frac{r_{\text{px}} \cdot Z}{f_x}
+     $$
+   * Compute two diameters (one per view) and **average** them
+
+4. **Visualization – `visualize_3d_points(...)`**
+
+   * Plot 3D center, a circle lying in a plane at the recovered depth, and camera markers
+
+---
+
+## Math Notes
+
+* **Pinhole projection**:
+
+  $$
+  \begin{aligned}
+  u &= \frac{f_x X}{Z} + c_x,\quad
+  v = \frac{f_y Y}{Z} + c_y
+  \end{aligned}
+  $$
+* **Pixel radius → metric**:
+
+  $$
+  \text{diameter} = 2\,r_{\text{real}} = 2\,\frac{r_{\text{px}} \cdot Z}{f_x}
+  $$
+* **Stereo geometry**:
+
+  * Given $(u_1,v_1), (u_2,v_2)$ and $P_1, P_2$, triangulation finds $\mathbf{X} = (X,Y,Z)^\top$
+
+---
+
+## Calibration & Image Prep (Important)
+
+* **Use accurate calibration**:
+
+  * Intrinsics $K_1, K_2$, distortion $(k_1, k_2, p_1, p_2, k_3)$
+  * Extrinsics $R, T$ (right relative to left) in **mm** if you want mm outputs
+* **Undistort or rectify** your images **before** detection for best accuracy
+
+  * Current script **defines** distortion coefficients but does not apply undistortion.
+    You can preprocess images with `cv2.undistort` or rectify the stereo pair.
+* Ensure the circle edge is **well-lit**, with good contrast and minimal occlusion.
+
+---
+
+## Configuration Tips
+
+* **Edge thresholds** (`Canny(50, 150)`) may need tuning for your lighting and texture.
+* **Sub-pixel refinement** window size `(5,5)` and termination criteria can be adjusted for stability.
+* If multiple circular objects exist, consider filtering contours by **area**, **circularity**, or expected **radius range**.
+
+---
+
+## Limitations
+
+* Assumes the visible contour is close to a **true circle projection** (thin circular rim).
+  Strong perspective or partial occlusion may bias the enclosing circle.
+* Pixel radius uses a **single depth (circle center)**; for very thick objects or tilted faces,
+  a full **conic fit** (ellipse in image) and plane estimation would be more accurate.
+* No explicit **outlier rejection** (e.g., RANSAC) on edge points; you can add it for robustness.
+
+---
+
+## Troubleshooting
+
+* **“Cannot read image”**: Check file paths (`tools/left.jpg`, `tools/right.jpg`).
+* **“No valid contour found”**: Loosen Canny thresholds, improve lighting, or blur less.
+* **Unrealistic diameter**:
+
+  * Verify calibration scales (are `T` and desired output both in **mm**?)
+  * Make sure images are **undistorted**.
+  * Check that left/right centers correspond to the **same physical circle**.
+* **Triangulation looks wrong**:
+
+  * Confirm `R`, `T` direction (right **from** left), and consistent coordinate system.
+  * Ensure `P1 = K1 [I|0]`, `P2 = K2 [R|T]` with the **same units**.
+
+---
+
+## Extensions (Ideas)
+
+* Undistort/rectify before detection, or detect on rectified images and use **disparity** for depth sanity checks.
+* Replace enclosing circle with **ellipse fit** to handle oblique views and estimate plane pose.
+* RANSAC on edge points to reject outliers before fitting.
+* Bundle adjustment: jointly refine 3D center and diameter by minimizing **reprojection error** in both views.
+
+---
+
+## License
+
+Add your preferred license here (e.g., MIT).
+
+---
+
+## Acknowledgements
+
+* OpenCV for vision primitives
+* Matplotlib for visualization
+
+---
+
+## Quick Start Snippet
+
+```python
+# Update these in main()
+K1 = np.array([[fx_l, 0, cx_l],
+               [0, fy_l, cy_l],
+               [0,    0,    1]])
+K2 = np.array([[fx_r, 0, cx_r],
+               [0, fy_r, cy_r],
+               [0,    0,    1]])
+
+R = ...  # 3x3 rotation (right w.r.t left)
+T = ...  # 3x1 translation in mm
+
+# Optional: undistort left/right images before fit_circle()
+# left_ud  = cv2.undistort(left,  K1, dist1)
+# right_ud = cv2.undistort(right, K2, dist2)
+```
+
+If you want, I can also provide a **requirements.txt**, a **Makefile**, or an example **undistortion preprocessor** to plug in before the circle fitting.
