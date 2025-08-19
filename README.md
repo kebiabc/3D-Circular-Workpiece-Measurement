@@ -46,7 +46,7 @@ matplotlib>=3.6
 ├── tools/
 │   ├── left.jpg          # left view image
 │   └── right.jpg         # right view image
-├── your_script.py        # the code you pasted
+├── measure_stereo.py        # the code you pasted
 └── README.md
 ```
 
@@ -69,7 +69,7 @@ matplotlib>=3.6
 3. Run:
 
 ```bash
-python your_script.py
+python measure_stereo.py
 ```
 
 ---
