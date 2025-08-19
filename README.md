@@ -4,6 +4,7 @@ Reconstruct a circular workpiece in 3D and estimate its real-world diameter from
 This repo demonstrates a full pipeline: **circle detection → stereo triangulation → metric diameter estimation → 3D visualization**.
 
 ---
+<img width="1000" height="800" alt="Figure_1" src="https://github.com/user-attachments/assets/45d9a41b-68c0-44d3-b70e-1c9b7935dae0" />
 
 ## Features
 
