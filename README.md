@@ -199,25 +199,3 @@ Add your preferred license here (e.g., MIT).
 * OpenCV for vision primitives
 * Matplotlib for visualization
 
----
-
-## Quick Start Snippet
-
-```python
-# Update these in main()
-K1 = np.array([[fx_l, 0, cx_l],
-               [0, fy_l, cy_l],
-               [0,    0,    1]])
-K2 = np.array([[fx_r, 0, cx_r],
-               [0, fy_r, cy_r],
-               [0,    0,    1]])
-
-R = ...  # 3x3 rotation (right w.r.t left)
-T = ...  # 3x1 translation in mm
-
-# Optional: undistort left/right images before fit_circle()
-# left_ud  = cv2.undistort(left,  K1, dist1)
-# right_ud = cv2.undistort(right, K2, dist2)
-```
-
-If you want, I can also provide a **requirements.txt**, a **Makefile**, or an example **undistortion preprocessor** to plug in before the circle fitting.
