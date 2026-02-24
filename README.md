@@ -85,66 +85,92 @@ python measure_stereo.py
    * Sub-pixel refine contour points (`cornerSubPix`), recompute enclosing circle
    * Return **center (u, v)** and **radius r\_px** in pixels
 
-2. **Stereo Triangulation – `triangulate_points(point1, point2, P1, P2)`**
+## Stereo Triangulation – `triangulate_points(point1, point2, P1, P2)`
 
-   * Build camera projection matrices
+Build camera projection matrices:
 
-     $
-     P_1 = K_1 [I\ |\ 0],\quad P_2 = K_2 [R\ |\ T]
-     $
-     
-   * Use `cv2.triangulatePoints` on the matched **circle centers** from the two views
-   * Convert homogeneous 4D back to 3D (mm) → **circle center in 3D**
+$$
+P_1 = K_1 [I \mid 0], \quad
+P_2 = K_2 [R \mid T]
+$$
 
-3. **Metric Diameter – `calculate_diameter(...)`**
+Use `cv2.triangulatePoints` on the matched **circle centers** from the two views.
 
-   * With depth $Z$ of the 3D center in each camera, convert pixel radius to metric:
+Convert homogeneous 4D back to 3D (mm) → **circle center in 3D**
 
-     $
-     r_{\text{real}} = \frac{r_{\text{px}} \cdot Z}{f_x}
-     $
-     
-   * Compute two diameters (one per view) and **average** them
+---
 
-4. **Visualization – `visualize_3d_points(...)`**
+## Metric Diameter – `calculate_diameter(...)`
 
-   * Plot 3D center, a circle lying in a plane at the recovered depth, and camera markers
+With depth $Z$ of the 3D center in each camera, convert pixel radius to metric:
+
+$$
+r_{\text{real}} =
+\frac{r_{\text{px}} \cdot Z}{f_x}
+$$
+
+Compute two diameters (one per view) and **average** them.
+
+---
+
+## Visualization – `visualize_3d_points(...)`
+
+Plot:
+
+- 3D center
+- a circle lying in a plane at the recovered depth
+- camera markers
 
 ---
 
 ## Math Notes
 
-* **Pinhole projection**:
+### Pinhole projection
 
-  $$
-  \begin{aligned}
-  u &= \frac{f_x X}{Z} + c_x,\quad
-  v = \frac{f_y Y}{Z} + c_y
-  \end{aligned}
-  $$
-* **Pixel radius → metric**:
-
-  $$
-  \text{diameter} = 2\,r_{\text{real}} = 2\,\frac{r_{\text{px}} \cdot Z}{f_x}
-  $$
-* **Stereo geometry**:
-
-  * Given $(u_1,v_1), (u_2,v_2)$ and $P_1, P_2$, triangulation finds $\mathbf{X} = (X,Y,Z)^\top$
+$$
+\begin{aligned}
+u &= \frac{f_x X}{Z} + c_x \\\\
+v &= \frac{f_y Y}{Z} + c_y
+\end{aligned}
+$$
 
 ---
 
-## Calibration & Image Prep (Important)
+### Pixel radius → metric diameter
 
-* **Use accurate calibration**:
+$$
+\text{diameter}
+=
+2 \, r_{\text{real}}
+=
+2 \,
+\frac{r_{\text{px}} \cdot Z}{f_x}
+$$
 
-  * Intrinsics $K_1, K_2$, distortion $(k_1, k_2, p_1, p_2, k_3)$
-  * Extrinsics $R, T$ (right relative to left) in **mm** if you want mm outputs
-* **Undistort or rectify** your images **before** detection for best accuracy
+---
 
-  * Current script **defines** distortion coefficients but does not apply undistortion.
-    You can preprocess images with `cv2.undistort` or rectify the stereo pair.
-* Ensure the circle edge is **well-lit**, with good contrast and minimal occlusion.
+### Stereo geometry
 
+Given:
+
+$$
+(u_1, v_1),
+(u_2, v_2)
+$$
+
+and projection matrices:
+
+$$
+P_1, P_2
+$$
+
+Triangulation finds:
+
+$$
+\mathbf{X}
+=
+(X, Y, Z)^T
+$$
 ---
 
 ## Configuration Tips
