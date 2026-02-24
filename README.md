@@ -92,6 +92,7 @@ python measure_stereo.py
      $$
      P_1 = K_1 [I\ |\ 0],\quad P_2 = K_2 [R\ |\ T]
      $$
+     
    * Use `cv2.triangulatePoints` on the matched **circle centers** from the two views
    * Convert homogeneous 4D back to 3D (mm) → **circle center in 3D**
 
@@ -102,6 +103,7 @@ python measure_stereo.py
      $$
      r_{\text{real}} = \frac{r_{\text{px}} \cdot Z}{f_x}
      $$
+     
    * Compute two diameters (one per view) and **average** them
 
 4. **Visualization – `visualize_3d_points(...)`**
